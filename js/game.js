@@ -12,6 +12,10 @@ Game.init = function () {
     game.stage.disableVisibilityChange = true;
 };
 
+var spriteArray = [];
+var reduceCountKeyPressLeftBy = 2;
+var reduceMeterEvery = 2000;    //milliseconds
+
 Game.preload = function () {
     game.load.image('sky', 'assets/sky.png');
     game.load.image('ground', 'assets/platform.png');
@@ -21,6 +25,18 @@ Game.preload = function () {
     game.load.image('electricMachineGreenRight', 'assets/ElectricMachineGreenRight.png');
     game.load.image('vu', 'assets/vu.png');
 };
+
+var player, platforms, cursors, text;
+var countKeyPresses = 0;
+var textCounter = 0;
+var leftDownFlag = false;
+var rightDownFlag = false;
+var timer;
+var fillMeterPic;
+    
+var electricMachineBlueLeft;
+var electricMachineGreenRight;
+var electricMachineTimer;
 
 Game.create = function () {
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -76,9 +92,96 @@ Game.create = function () {
     Client.askNewPlayer();
 };
 
-Game.getCoordinates = function (layer, pointer) {
-    Client.sendClick(pointer.worldX, pointer.worldY);
-};
+function fillMeter() 
+{
+    var numSprites = Math.floor(countKeyPresses/5);
+    
+    for(var i=0;i<spriteArray.length;i++){
+        spriteArray[i].kill();
+    }
+    if(countKeyPresses>=50){
+        text.setText('You Won!');
+    }else{
+        numSprites = Math.floor(countKeyPresses/5);
+        for(i=0;i<numSprites;i++){
+            var meterPictureSprite = game.add.sprite(fillMeterPic.x + ((i)*32), fillMeterPic.y, 'pikachu');
+            spriteArray.push(meterPictureSprite);
+        }
+    }
+}
+function reduceMeter() {
+    if(countKeyPresses > (0 + reduceCountKeyPressLeftBy))
+        {
+            countKeyPresses -= reduceCountKeyPressLeftBy;
+            text.setText('Counter: ' + countKeyPresses);
+            fillMeter();   
+        }
+}
+function changeElectricMachine()
+{
+    
+    if (electricMachineBlueLeft.visible == true)
+    {
+        electricMachineBlueLeft.visible = false;
+        electricMachineGreenRight.visible = true;
+    }
+    else
+    {
+        electricMachineBlueLeft.visible = true;
+        electricMachineGreenRight.visible = false;
+    }
+    electricMachineTimer.delay = game.rnd.integerInRange(1000, 5000);
+}
+function countKeyPressLeft()
+{
+    if(cursors.left.isDown)
+    {
+        leftDownFlag = true;
+    }
+    else{
+        if(leftDownFlag){
+            leftDownFlag = false;
+            countKeyPresses++;
+        }
+    }
+    
+    //MYCODE
+    text.setText('Counter: ' + countKeyPresses);
+    
+    fillMeter();
+}
+function countKeyPressRight()
+{
+    if(cursors.right.isDown)
+        {
+            rightDownFlag = true;
+        }
+    else
+    {
+        if(rightDownFlag){
+            rightDownFlag = false;
+            countKeyPresses++;
+        }
+    }
+    //MYCODE
+    text.setText('Counter: ' + countKeyPresses);
+    
+    fillMeter();
+}
+
+Game.update = function(){
+    // Collide player with platforms
+    game.physics.arcade.collide(player, platforms);
+    //Check what electricMachine is up
+    if(electricMachineBlueLeft.visible == true)
+    {
+        countKeyPressLeft();
+    }
+    else
+    {
+        countKeyPressRight();
+    }
+}
 
 Game.addNewPlayer = function (id, x, y) {
     Game.playerMap[id] = game.add.sprite(x, y, 'sprite');
